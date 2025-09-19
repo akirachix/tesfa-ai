@@ -23,7 +23,8 @@ Steps:
    - Flag risks >70 for is_affected update.
 3. Generate 1-2 tasks per disease for Task table:
    - title: Action (max 255 chars).
-   - description: Detailed steps (e.g., 'Vaccinate 50k in camps; track via agent').
+   - description: Detailed steps(e.g., 'Conduct cholera vaccination campaign in IDP camps').
+   - disease: Disease name (e.g., 'Cholera').
    - priority: Map to low/medium/high based on risk level.
    - Tasks must be agent-executable, measurable, linked to prediction.
 4. Output JSON:

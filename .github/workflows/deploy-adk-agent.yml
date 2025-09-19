@@ -1,0 +1,42 @@
+name: Deploy ADK Agent to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy ADK Agent
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install ADK
+      run: pip install google-adk
+    
+    
+    - name: Deploy to Cloud Run
+      working-directory: .
+      run: |
+        adk deploy cloud_run \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --service_name=events-agent \
+          --app_name=events-agent \
+          --region=europe-west1 \
+          ./events_agent

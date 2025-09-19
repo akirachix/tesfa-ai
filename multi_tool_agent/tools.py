@@ -4,11 +4,12 @@ import json
 import torch
 import psycopg2
 import time
-from typing import List, Dict, Any, Optional
-import chromadb
+from typing import List, Dict, Optional
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from duckduckgo_search import DDGS
+
+
 _conn = None
 _cur = None
 _embedding_model = None
