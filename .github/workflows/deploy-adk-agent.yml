@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     name: Deploy ADK Agent
@@ -53,4 +52,4 @@ jobs:
             --service_name=multi-tool-agent \
             --app_name=multi-tool-agent \
             --region=europe-west1 \
-            ./multi-tool-agent
+            ./multi_tool_agent
