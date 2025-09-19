@@ -40,5 +40,4 @@ jobs:
           --app_name=multi_tool_agent \
           --region=europe-west1 \
           ./multi_tool_agent \
-          -- \
-          --env-file .env
+  
