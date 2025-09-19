@@ -53,4 +53,4 @@ jobs:
             --service_name=multi-tool-agent \
             --app_name=multi-tool-agent \
             --region=europe-west1 \
-            ./multi-tool-agent
+            ./multi_tool_agent
