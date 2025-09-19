@@ -9,35 +9,48 @@ jobs:
   deploy:
     name: Deploy ADK Agent
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
+      SUPABASE_DB: ${{ secrets.SUPABASE_DB }}
+      SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
+      SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+      SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install ADK
-      run: pip install google-adk
-    
-    
-    - name: Deploy to Cloud Run
-      working-directory: .
-      run: |
-        adk deploy cloud_run \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --service_name=multi_tool_agent \
-          --app_name=multi_tool_agent \
-          --region=europe-west1 \
-          ./multi_tool_agent \
-  
+      - name: Install ADK
+        run: pip install google-adk
+
+      - name: Create .env file from secrets
+        run: |
+          echo "GOOGLE_API_KEY=${GOOGLE_API_KEY}" >> .env
+          echo "SUPABASE_HOST=${SUPABASE_HOST}" >> .env
+          echo "SUPABASE_DB=${SUPABASE_DB}" >> .env
+          echo "SUPABASE_USER=${SUPABASE_USER}" >> .env
+          echo "SUPABASE_PASSWORD=${SUPABASE_PASSWORD}" >> .env
+          echo "SUPABASE_PORT=${SUPABASE_PORT}" >> .env
+
+      - name: Deploy to Cloud Run
+        run: |
+          adk deploy cloud_run \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --service_name=multi-tool-agent \
+            --app_name=multi-tool-agent \
+            --region=europe-west1 \
+            ./multi-tool-agent
