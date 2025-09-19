@@ -36,8 +36,8 @@ jobs:
       run: |
         adk deploy cloud_run \
           --project=${{ secrets.GCP_PROJECT_ID }} \
-          --service_name=multi_tool_agent \
-          --app_name=multi_tool_agent \
+          --service_name=multi-tool-agent \
+          --app_name=multi-tool-agent \
           --region=europe-west1 \
-          ./multi_tool_agent \
+          ./multi-tool-agent \
   
