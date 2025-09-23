@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from duckduckgo_search import DDGS
+import google.generativeai as genai
 
 
 _conn = None
@@ -138,7 +139,7 @@ Rules:
 - If diseases are not listed, infer from context
 - NEVER return empty lists — make reasonable assumptions
 """
-        import google.generativeai as genai
+        
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
         gemini_model = genai.GenerativeModel('gemini-1.5-flash')
         gemini_response = gemini_model.generate_content(gemini_prompt)
