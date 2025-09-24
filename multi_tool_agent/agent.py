@@ -4,7 +4,7 @@ from .tools import retrieve_context, predict_health_risk
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-    raise EnvironmentError("GOOGLE_API_KEY environment variable is required but not set.")
+   raise EnvironmentError("GOOGLE_API_KEY environment variable is required but not set.")
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
@@ -69,7 +69,7 @@ For each medium/high-risk disease, generate 1 actionable task:
 - Risk is always a **percentage integer (0–100)**.
 - Prioritize diseases with highest public health impact in conflict settings.
 """,
-    tools=[retrieve_context, predict_health_risk]
+   tools=[retrieve_context, predict_health_risk]
 )
 
 root_agent = health_agent
