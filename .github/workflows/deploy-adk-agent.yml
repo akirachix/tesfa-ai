@@ -38,7 +38,7 @@ jobs:
 
       - name: Create .env file from secrets
         run: |
-          cd multi_tool_agent
+          cd tesfa_agent
           touch .env
           echo "GOOGLE_API_KEY=${GOOGLE_API_KEY}" >> .env
           echo "SUPABASE_HOST=${SUPABASE_HOST}" >> .env
@@ -52,7 +52,7 @@ jobs:
         run: |
           adk deploy cloud_run \
             --project=${{ secrets.GCP_PROJECT_ID }} \
-            --service_name=multi-tool-agent \
-            --app_name=multi-tool-agent \
+            --service_name=tesfa-agent \
+            --app_name=tesfa-agent \
             --region=europe-west1 \
-            ./multi_tool_agent
+            ./tesfa_agent
