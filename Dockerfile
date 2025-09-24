@@ -1,9 +1,9 @@
 FROM python:3.13-slim
 WORKDIR /app
 
-COPY requirements.txt .
+COPY tesfa_agent/requirements.txt .
 RUN pip install --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir -r tesfa_agent/requirements.txt
 
 COPY . .
 
