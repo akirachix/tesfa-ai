@@ -56,3 +56,13 @@ jobs:
             --app_name=tesfa-agent \
             --region=europe-west1 \
             ./tesfa_agent
+            
+      - name: Ensure unauthenticated access is allowed
+        run: |
+          gcloud run services add-iam-policy-binding tesfa-agent \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --region=europe-west1 \
+          --member=allUsers \
+          --role=roles/run.invoker
+        
+
