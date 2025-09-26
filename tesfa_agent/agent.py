@@ -1,16 +1,19 @@
-from google.adk.agents import LlmAgent
 import os
+from fastapi import FastAPI
+import uvicorn
+from google.adk.cli.fast_api import get_fast_api_app
+from google.adk.agents import LlmAgent
 from .tools import retrieve_context, predict_health_risk
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-   raise EnvironmentError("GOOGLE_API_KEY environment variable is required but not set.")
+    raise EnvironmentError("GOOGLE_API_KEY environment variable is required but not set.")
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
 health_agent = LlmAgent(
     model="gemini-2.0-flash",
-    name="TesfaAIAgent",
+    name="tesfaaigent",
     description="Predicts long-term health risks in post-conflict regions using RAG and local BioGPT.",
     instruction="""
 You are Tesfa AI Agent, an AI that predicts long-term health risks exclusively in post-conflict and active conflict regions (e.g., Yemen, Syria, South Sudan, Ukraine, Gaza, Sudan).
@@ -29,13 +32,13 @@ For all other inputs that request a health risk assessment (e.g., "send me the h
    - In `description`, state exactly: "There are no health risks due to conflict in this country."
 2. **Risk scores are percentages (0–100%)**, representing the likelihood or severity of health impact.
 3. If any disease risk > 70%, the backend will set `is_affected = True` for that country and region.
-4. **Output ONLY valid JSON — no extra text, no disclaimers.**
+4. **Output ONLY valid JSON — no extra text, no disclaimers.
 
 ### Location Handling
 - `country_name`: Use the standard English country name (e.g., "Yemen").
 - `region_name`: Human-readable sub-national area (e.g., "Aleppo Governorate"). If unknown, use `"National"`.
 
-###  Disease Risk Assessment (4–6 diseases)
+### Disease Risk Assessment (4–6 diseases)
 For each disease (e.g., cholera, malaria, PTSD, measles, acute malnutrition, dengue):
 - Estimate risk as a **percentage (0–100)** based on:
   - Historical conflict-health data (2000–2025)
@@ -69,7 +72,24 @@ For each medium/high-risk disease, generate 1 actionable task:
 - Risk is always a **percentage integer (0–100)**.
 - Prioritize diseases with highest public health impact in conflict settings.
 """,
-   tools=[retrieve_context, predict_health_risk]
+    tools=[retrieve_context, predict_health_risk]
 )
 
 root_agent = health_agent
+
+
+AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".")  
+session_service_uri = "sqlite:///./sessions.db"
+ALLOWED_ORIGINS = ["*"]
+SERVE_WEB_INTERFACE = True
+
+app: FastAPI = get_fast_api_app(
+    agents_dir=AGENT_DIR,
+    session_service_uri=session_service_uri,
+    allow_origins=ALLOWED_ORIGINS,
+    web=SERVE_WEB_INTERFACE,
+)
+
+# --- Entry Point (for local testing) ---
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
