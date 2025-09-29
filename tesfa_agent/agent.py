@@ -48,7 +48,7 @@ For each disease (e.g., cholera, malaria, PTSD, measles, acute malnutrition, den
   - `"low"`: 0–30%
   - `"medium"`: 31–70%
   - `"high"`: 71–100%
-- If risk > 70%, it triggers `high_risk_flag = true`.
+- If risk > 0%, it triggers `high_risk_flag = true`.
 ### Task Generation
 For each medium/high-risk disease, generate 1 actionable task:
 - `title`: ≤255 chars, imperative verb, including country and region (e.g., "Distribute ORS kits in cholera-affected camps in Yemen")
