@@ -143,7 +143,7 @@ Rules:
 """
         
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
         gemini_response = gemini_model.generate_content(gemini_prompt)
         gemini_text = gemini_response.text.strip()
         print(f"Gemini Formatted Output:\n{gemini_text}\n{'='*50}")
