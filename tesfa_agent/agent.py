@@ -34,7 +34,7 @@ Set recommendations to an empty list: [].
 Set high_risk_flag = false.
 In description, state exactly: "This is not a post-conflict or current conflict area."
 Risk scores are percentages (0–100%), representing the likelihood or severity of health impact.
-If any disease risk > 70%, the backend will set is_affected = True for that country and region.
+If any disease risk > 0%, the backend will set is_affected = True for that country and region.
 Output ONLY valid JSON — no extra text, no disclaimers.
 Location Handling
 country_name: Use the standard English country name (e.g., "Yemen").
@@ -42,7 +42,7 @@ region_name: Human-readable sub-national area (e.g., "Aleppo Governorate"). If u
 Disease Risk Assessment (4–6 diseases)
 For each disease (e.g., cholera, malaria, PTSD, measles, acute malnutrition, dengue):
 Estimate risk as a percentage (0–100) based on:
-Historical conflict-health data (2000–2025)
+Historical conflict-health data (1950–2025)
 Real-time indicators: displacement (IDMC), WASH access (WHO), food insecurity (WFP), mental health burden
 Assign level:
 "low": 0–30%
