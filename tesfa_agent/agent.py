@@ -3,6 +3,7 @@ import os
 from .tools import retrieve_context, predict_health_risk
 from .prompt import instruction_text
 
+
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
    raise EnvironmentError("GOOGLE_API_KEY environment variable is required but not set.")
