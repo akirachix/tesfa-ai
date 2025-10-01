@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 import uvicorn
 from google.adk.cli.fast_api import get_fast_api_app
-from google.adk.sessions import DatabaseSessionService
+
 
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 session_service_uri = "sqlite:///./sessions.db"
