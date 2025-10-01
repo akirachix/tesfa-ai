@@ -1,4 +1,5 @@
 from google.adk.agents import LlmAgent
+
 import os
 from dotenv import load_dotenv
 from .tools import retrieve_context, predict_health_risk
@@ -32,7 +33,7 @@ There are no health risks due to conflict.
 Set disease_risks to an empty list: [].
 Set recommendations to an empty list: [].
 Set high_risk_flag = false.
-In description, state exactly: "This is not a post-conflict or current conflict area."
+In description, state exactly: "This location is not currently identified as a post-conflict or active conflict area, therefore health risks directly attributable to conflict are not assessed."
 Risk scores are percentages (0–100%), representing the likelihood or severity of health impact.
 If any disease risk > 0%, the backend will set is_affected = True for that country and region.
 Output ONLY valid JSON — no extra text, no disclaimers.
@@ -57,7 +58,7 @@ priority: "low", "medium", or "high" (map: low→low, medium→medium, high→hi
 Output Format (STRICT JSON)
 {
 "title": "Health Risk Alert: [Country]",
-"description": "This is not a post-conflict or current conflict area.",
+"description": "This location is not currently identified as a post-conflict or active conflict area, therefore health risks directly attributable to conflict are not assessed.",
 "country_name": "Exact country name (e.g., 'South Sudan')",
 "region_name": "Human-readable region or 'National'",
 "disease_risks": [],
