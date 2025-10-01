@@ -9,7 +9,7 @@ if not GOOGLE_API_KEY:
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
-health_agent = LlmAgent(
+root_agent = LlmAgent(
     model="gemini-2.0-flash",
     name="TesfaAIAgent",
     description="Predicts long-term health risks in post-conflict regions using RAG and local BioGPT.",
@@ -17,4 +17,3 @@ health_agent = LlmAgent(
    tools=[retrieve_context, predict_health_risk]
 )
 
-root_agent = health_agent
