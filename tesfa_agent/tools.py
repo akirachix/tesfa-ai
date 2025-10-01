@@ -47,7 +47,7 @@ def get_bio_gpt():
         else:
             print("BioGPT loaded on CPU.")
     return _bio_gpt_model, _bio_gpt_tokenizer
-def retrieve_context(query: str, region: Optional[str] = None, top_k: int = 3) -> List[Dict]:
+def retrieve_context(query: str) -> List[Dict]:
     """
     Hybrid retriever: queries Supabase pgvector first,
     falls back to web search if results are weak.
@@ -56,6 +56,8 @@ def retrieve_context(query: str, region: Optional[str] = None, top_k: int = 3) -
     contexts = []
     cur, model = get_supabase_client()
     query_embedding = model.encode([query])[0].tolist()
+    top_k = 3 
+    region = None 
    
     cur.execute(
         """
@@ -141,7 +143,7 @@ Rules:
 """
         
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
         gemini_response = gemini_model.generate_content(gemini_prompt)
         gemini_text = gemini_response.text.strip()
         print(f"Gemini Formatted Output:\n{gemini_text}\n{'='*50}")
