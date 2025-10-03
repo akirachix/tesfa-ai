@@ -12,4 +12,4 @@ RUN adduser --disabled-password --gecos "" myuser \
 USER myuser
 ENV PATH="/home/myuser/.local/bin:$PATH"
 
-CMD ["uvicorn", "tesfa_agent.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
