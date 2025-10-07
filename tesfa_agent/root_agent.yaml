@@ -1,3 +1,9 @@
-name: "tesfa_agent"
-description: "Demo agent for tesfa_agent"
-tools: []
+name: tesfa_agent
+description: Predicts long-term health risks in post-conflict regions using RAG and local BioGPT.
+model: gemini-2.5-flash
+
+tools:
+  - retrieve_context
+  - predict_health_risk
+
+instruction_path: prompt.py  
