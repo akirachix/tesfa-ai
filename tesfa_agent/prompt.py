@@ -52,7 +52,6 @@ For each disease medium or high risk, generate an actionable task:
   "high_risk_flag": false,
   "recommendations": []
 }
-
 ### Constraints
 - Only output JSON when explicitly requested by the user in their input.
 - For normal health risk queries or other inputs not explicitly requesting JSON, respond conversationally with clear, context-aware answers.
