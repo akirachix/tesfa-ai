@@ -10,6 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from duckduckgo_search import DDGS
 import google.generativeai as genai
 
+
 _conn = None
 _cur = None
 _embedding_model = None
@@ -183,8 +184,3 @@ Rules:
             "reason": "Data retrieval failed — assume worst-case scenario",
             "recommendations": ["Deploy emergency medical teams", "Initiate rapid assessment"]
         }
-
-
-
-
-

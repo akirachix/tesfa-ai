@@ -2,6 +2,10 @@ import os
 from fastapi import FastAPI
 import uvicorn
 from google.adk.cli.fast_api import get_fast_api_app
+from dotenv import load_dotenv
+
+load_dotenv() 
+
 
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tesfa_agent")
 session_service_uri = "sqlite:///./sessions.db"
