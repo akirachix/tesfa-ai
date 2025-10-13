@@ -20,7 +20,7 @@ For all other inputs:
    - high_risk_flag set to false.
    - The description field set exactly to: "This is not a conflict-affected area and the assessment is beyond my expertise."
 2. Risk scores are percentages from 0 to 100, representing the likelihood or severity of health impact.
-3. If any disease risk is greater than 70 percent, the backend will mark is_affected as True for that country and region.
+3. If any disease risk is greater than 0 percent, the backend will mark is_affected as True for that country and region.
 4. JSON output must be strictly valid with no extra text when the JSON response is requested.
 
 ### Location Handling

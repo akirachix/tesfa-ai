@@ -1,69 +1,130 @@
-name: Deploy ADK Agent to Cloud Run
+# name: Deploy ADK Agent to Cloud Run
 
+# on:
+#   push:
+#     branches:
+#       - main
+#       - feature/agent
+# jobs:
+#   deploy:
+#     name: Deploy ADK Agent
+#     runs-on: ubuntu-latest
+#     env:
+#       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+#       SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
+#       SUPABASE_DB: ${{ secrets.SUPABASE_DB }}
+#       SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
+#       SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+#       SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Authenticate to Google Cloud
+#         uses: google-github-actions/auth@v2
+#         with:
+#           credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+#       - name: Set up Cloud SDK
+#         uses: google-github-actions/setup-gcloud@v2
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - name: Install ADK
+#         run: pip install google-adk
+
+#       - name: Create .env file from secrets
+#         run: |
+#           cd tesfa_agent
+#           touch .env
+#           echo "GOOGLE_API_KEY=${GOOGLE_API_KEY}" >> .env
+#           echo "SUPABASE_HOST=${SUPABASE_HOST}" >> .env
+#           echo "SUPABASE_DB=${SUPABASE_DB}" >> .env
+#           echo "SUPABASE_USER=${SUPABASE_USER}" >> .env
+#           echo "SUPABASE_PASSWORD=${SUPABASE_PASSWORD}" >> .env
+#           echo "SUPABASE_PORT=${SUPABASE_PORT}" >> .env
+#           ls -la .env
+
+#       - name: Deploy to Cloud Run
+#         run: |
+#           adk deploy cloud_run \
+#             --project=${{ secrets.GCP_PROJECT_ID }} \
+#             --service_name=tesfa-agent \
+#             --app_name=tesfa-agent \
+#             --region=europe-west1 \
+#             ./tesfa_agent
+            
+#       - name: Ensure unauthenticated access is allowed
+#         run: |
+#           gcloud run services add-iam-policy-binding tesfa-agent \
+#           --project=${{ secrets.GCP_PROJECT_ID }} \
+#           --region=europe-west1 \
+#           --member=allUsers \
+#           --role=roles/run.invoker
+        
+name: Deploy ADK Agent to Cloud Run
 on:
   push:
     branches:
       - main
       - feature/agent
-jobs:
-  deploy:
-    name: Deploy ADK Agent
-    runs-on: ubuntu-latest
-    env:
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
-      SUPABASE_DB: ${{ secrets.SUPABASE_DB }}
-      SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
-      SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
-      SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
 
+env:
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/adk-agent
+  REGION: us-central1
+  SERVICE_NAME: adk-agent
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
         with:
-          python-version: '3.11'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
 
-      - name: Install ADK
-        run: pip install google-adk
-
-      - name: Create .env file from secrets
+      - name: Configure Docker for GCR
         run: |
-          cd tesfa_agent
-          touch .env
-          echo "GOOGLE_API_KEY=${GOOGLE_API_KEY}" >> .env
-          echo "SUPABASE_HOST=${SUPABASE_HOST}" >> .env
-          echo "SUPABASE_DB=${SUPABASE_DB}" >> .env
-          echo "SUPABASE_USER=${SUPABASE_USER}" >> .env
-          echo "SUPABASE_PASSWORD=${SUPABASE_PASSWORD}" >> .env
-          echo "SUPABASE_PORT=${SUPABASE_PORT}" >> .env
-          ls -la .env
+          gcloud auth configure-docker --quiet
+
+      - name: Build container image
+        run: |
+          docker build -t "${IMAGE_NAME}:${GITHUB_SHA::8}" .
+      
+      - name: Push image to Registry
+        run: |
+          docker push "${IMAGE_NAME}:${GITHUB_SHA::8}"
 
       - name: Deploy to Cloud Run
         run: |
-          adk deploy cloud_run \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --service_name=tesfa-agent \
-            --app_name=tesfa-agent \
-            --region=europe-west1 \
-            ./tesfa_agent
-            
-      - name: Ensure unauthenticated access is allowed
-        run: |
-          gcloud run services add-iam-policy-binding tesfa-agent \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --region=europe-west1 \
-          --member=allUsers \
-          --role=roles/run.invoker
-        
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --image="${IMAGE_NAME}:${GITHUB_SHA::8}" \
+            --region="${{ env.REGION }}" \
+            --platform=managed \
+            --project="${{ secrets.GCP_PROJECT_ID }}" \
+            --allow-unauthenticated \
+            --update-env-vars="GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}"
 
+      - name: Output Cloud Run URL
+        run: |
+          echo "Cloud Run service URL:"
+          gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --platform=managed \
+            --format="value(status.url)"
