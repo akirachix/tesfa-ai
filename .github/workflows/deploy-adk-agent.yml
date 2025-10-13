@@ -3,7 +3,7 @@ name: Deploy Tesfa AI Agent to Cloud Run
 on:
   push:
     branches:
-      - feature/agent
+      - feature/tesfa-agentss
 
 jobs:
   deploy:
