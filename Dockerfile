@@ -1,16 +1,23 @@
 FROM python:3.13-slim
-WORKDIR /app
-COPY requirements.txt .
 
-RUN pip install --upgrade pip setuptools wheel \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
+
 
 COPY . .
 
-RUN adduser --disabled-password --gecos "" myuser \
-    && chown -R myuser:myuser /app
+RUN adduser --disabled-password --gecos "" myuser && chown -R myuser:myuser /app
 USER myuser
 
-ENV PATH="/home/myuser/.local/bin:$PATH"
+EXPOSE 8080
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
