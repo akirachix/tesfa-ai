@@ -47,13 +47,22 @@ jobs:
             --project "${PROJECT_ID}" \
             --set-env-vars "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SUPABASE_HOST=${{ secrets.SUPABASE_HOST }},SUPABASE_DB=${{ secrets.SUPABASE_DB }},SUPABASE_USER=${{ secrets.SUPABASE_USER }},SUPABASE_PASSWORD=${{ secrets.SUPABASE_PASSWORD }},SUPABASE_PORT=5432"
 
+      - name: Grant public access (ensure allUsers can invoke)
+        run: |
+          gcloud run services add-iam-policy-binding tesfa-agent \
+            --region=europe-west1 \
+            --platform=managed \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --project="${{ secrets.GCP_PROJECT_ID }}"
+
       - name: Get Service URL
         id: get-url
         run: |
           URL=$(gcloud run services describe tesfa-agent \
             --region=europe-west1 \
             --platform=managed \
-            --format='value(status.url)')
+            --format='value(status.url)' 2>/dev/null || echo "https://tesfa-agent-europe-west1-${{ secrets.GCP_PROJECT_ID }}.run.app")
           echo "service_url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Print Service URL
