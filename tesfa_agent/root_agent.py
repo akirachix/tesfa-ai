@@ -1,6 +1,3 @@
-# from .agent import root_agent
-
-
 from google.adk.agents import LlmAgent
 import os
 from .tools import retrieve_context, predict_health_risk
