@@ -1,24 +1,15 @@
 FROM python:3.13-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r tesfa_agent/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir -r requirements.txt
+COPY agents/ ./agents/
 
-COPY . .
-
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser:appuser /app
-USER appuser
-
-RUN touch sessions.db
-
-EXPOSE 8080
+RUN adduser --disabled-password --gecos "" myuser \
+    && chown -R myuser:myuser /app
+USER myuser
+ENV PATH="/home/myuser/.local/bin:$PATH"
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
