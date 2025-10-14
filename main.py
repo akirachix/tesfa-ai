@@ -16,4 +16,5 @@ app: FastAPI = get_fast_api_app(
 )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 8080))  
+    uvicorn.run(app, host="0.0.0.0", port=port)
