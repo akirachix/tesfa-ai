@@ -23,17 +23,26 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      - name: Print working directory and files
+        run: |
+          pwd
+          ls -R
+
       - name: Build and push Docker image to Container Registry
         run: |
+          echo "Starting Cloud Build with debug verbosity"
           PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
           IMAGE="gcr.io/${PROJECT_ID}/tesfa-agent"
 
           gcloud builds submit \
             --tag "${IMAGE}" \
-            --project "${PROJECT_ID}"
+            --project "${PROJECT_ID}" \
+            --verbosity=debug
+          echo "Finished Cloud Build step"
 
       - name: Deploy to Cloud Run
         run: |
+          echo "Starting Cloud Run deployment"
           PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
           SERVICE_NAME="tesfa-agent"
           REGION="europe-west1"
@@ -46,15 +55,18 @@ jobs:
             --allow-unauthenticated \
             --project "${PROJECT_ID}" \
             --set-env-vars "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SUPABASE_HOST=${{ secrets.SUPABASE_HOST }},SUPABASE_DB=${{ secrets.SUPABASE_DB }},SUPABASE_USER=${{ secrets.SUPABASE_USER }},SUPABASE_PASSWORD=${{ secrets.SUPABASE_PASSWORD }},SUPABASE_PORT=5432"
+          echo "Finished Cloud Run deployment"
 
       - name: Grant public access (ensure allUsers can invoke)
         run: |
+          echo "Granting public access to Cloud Run service"
           gcloud run services add-iam-policy-binding tesfa-agent \
             --region=europe-west1 \
             --platform=managed \
             --member="allUsers" \
             --role="roles/run.invoker" \
             --project="${{ secrets.GCP_PROJECT_ID }}"
+          echo "Public access granted"
 
       - name: Get Service URL
         id: get-url
@@ -67,4 +79,4 @@ jobs:
 
       - name: Print Service URL
         run: |
-          echo " Deployed! Your agent is live at: ${{ steps.get-url.outputs.service_url }}"
+          echo "Deployed! Your agent is live at: ${{ steps.get-url.outputs.service_url }}"
