@@ -29,7 +29,7 @@ For all other inputs:
 
 ### Disease Risk Assessment (4–6 diseases)
 For each disease like cholera, malaria, PTSD, measles, acute malnutrition, and dengue:
-- Estimate the risk as an integer percentage from 0 to 100 based on historical conflict-health data from 2000 to 2025, displacement, WASH access, food insecurity, and mental health burden.
+- Estimate the risk as an integer percentage from 0 to 100 based on historical conflict-health data from 1950 to 2025, displacement, WASH access, food insecurity, and mental health burden.
 - Assign risk levels:
   - low: 0-30%
   - medium: 31-70%
