@@ -66,7 +66,6 @@
 #           --member=allUsers \
 #           --role=roles/run.invoker
         
-        
 name: Deploy ADK Agent to Cloud Run
 
 on:
@@ -120,15 +119,21 @@ jobs:
           EOF
           ls -la tesfa_agent/.env
 
-      - name: Verify agent structure
+      - name: Clean up legacy agent files and verify structure
         run: |
-          if [ ! -f tesfa_agent/root_agent.py ]; then
-            echo "ERROR: root_agent.py is missing!"
+          # Remove outdated files that interfere with ADK
+          rm -f tesfa_agent/agent.py
+          rm -f tesfa_agent/root_agent.py
+          
+          # Ensure __init__.py exists
+          if [ ! -f tesfa_agent/__init__.py ]; then
+            echo "ERROR: tesfa_agent/__init__.py is missing!"
             exit 1
           fi
-          if [ -f tesfa_agent/agent.py ]; then
-            echo "WARNING: agent.py exists and may interfere. Removing it."
-            rm tesfa_agent/agent.py
+          
+          # Optional: check that root_agent is likely defined
+          if ! grep -q "root_agent\s*=" tesfa_agent/__init__.py; then
+            echo "WARNING: 'root_agent =' not found in __init__.py — deployment may fail."
           fi
 
       - name: Deploy to Cloud Run
