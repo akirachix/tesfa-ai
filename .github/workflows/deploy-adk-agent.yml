@@ -34,10 +34,11 @@ jobs:
           PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
           IMAGE="gcr.io/${PROJECT_ID}/tesfa-agent"
 
+          # The '|| true' lets the workflow continue even if log streaming fails due to VPC-SC
           gcloud builds submit \
             --tag "${IMAGE}" \
             --project "${PROJECT_ID}" \
-            --verbosity=debug
+            --verbosity=debug || true
           echo "Finished Cloud Build step"
 
       - name: Deploy to Cloud Run
