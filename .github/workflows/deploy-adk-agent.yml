@@ -1,4 +1,4 @@
-name: Deploy Tesfa AI Agent to Cloud Run
+name: Deploy ADK Agent to Cloud Run
 
 on:
   push:
@@ -7,8 +7,16 @@ on:
 
 jobs:
   deploy:
-    name: Build and Deploy Custom FastAPI App
+    name: Deploy ADK Agent
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
+      SUPABASE_DB: ${{ secrets.SUPABASE_DB }}
+      SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
+      SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+      SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,66 +26,39 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Set up Google Cloud SDK
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          python-version: '3.11'
 
-      - name: Print working directory and files
+      - name: Install ADK
+        run: pip install google-adk
+
+      - name: Deploy to Cloud Run using ADK (app_name must match Python package)
         run: |
-          pwd
-          ls -R
+          adk deploy cloud_run \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --service_name=tesfa-agent \
+            --app_name=tesfa_agent \
+            --region=europe-west1 \
+            ./tesfa_agent
 
-      - name: Build and push Docker image to Container Registry
+      - name: Set runtime environment variables on Cloud Run (secure)
         run: |
-          echo "Starting Cloud Build with debug verbosity"
-          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-          IMAGE="gcr.io/${PROJECT_ID}/tesfa-agent"
+          # Use gcloud to set environment variables for the deployed service from GitHub secrets.
+          # This ensures the running container sees these as real environment variables.
+          gcloud run services update tesfa-agent \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --region=europe-west1 \
+            --update-env-vars=GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}",SUPABASE_HOST="${{ secrets.SUPABASE_HOST }}",SUPABASE_DB="${{ secrets.SUPABASE_DB }}",SUPABASE_USER="${{ secrets.SUPABASE_USER }}",SUPABASE_PASSWORD="${{ secrets.SUPABASE_PASSWORD }}",SUPABASE_PORT="${{ secrets.SUPABASE_PORT }}"
 
-          # The '|| true' lets the workflow continue even if log streaming fails due to VPC-SC
-          gcloud builds submit \
-            --tag "${IMAGE}" \
-            --project "${PROJECT_ID}" \
-            --verbosity=debug || true
-          echo "Finished Cloud Build step"
-
-      - name: Deploy to Cloud Run
+      - name: Ensure unauthenticated access is allowed
         run: |
-          echo "Starting Cloud Run deployment"
-          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-          SERVICE_NAME="tesfa-agent"
-          REGION="europe-west1"
-          IMAGE="gcr.io/${PROJECT_ID}/tesfa-agent"
-
-          gcloud run deploy "${SERVICE_NAME}" \
-            --image "${IMAGE}" \
-            --platform managed \
-            --region "${REGION}" \
-            --allow-unauthenticated \
-            --project "${PROJECT_ID}" \
-            --set-env-vars "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SUPABASE_HOST=${{ secrets.SUPABASE_HOST }},SUPABASE_DB=${{ secrets.SUPABASE_DB }},SUPABASE_USER=${{ secrets.SUPABASE_USER }},SUPABASE_PASSWORD=${{ secrets.SUPABASE_PASSWORD }},SUPABASE_PORT=5432"
-          echo "Finished Cloud Run deployment"
-
-      - name: Grant public access (ensure allUsers can invoke)
-        run: |
-          echo "Granting public access to Cloud Run service"
           gcloud run services add-iam-policy-binding tesfa-agent \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
             --region=europe-west1 \
-            --platform=managed \
-            --member="allUsers" \
-            --role="roles/run.invoker" \
-            --project="${{ secrets.GCP_PROJECT_ID }}"
-          echo "Public access granted"
-
-      - name: Get Service URL
-        id: get-url
-        run: |
-          URL=$(gcloud run services describe tesfa-agent \
-            --region=europe-west1 \
-            --platform=managed \
-            --format='value(status.url)' 2>/dev/null || echo "https://tesfa-agent-europe-west1-${{ secrets.GCP_PROJECT_ID }}.run.app")
-          echo "service_url=${URL}" >> "$GITHUB_OUTPUT"
-
-      - name: Print Service URL
-        run: |
-          echo "Deployed! Your agent is live at: ${{ steps.get-url.outputs.service_url }}"
+            --member=allUsers \
+            --role=roles/run.invoker
