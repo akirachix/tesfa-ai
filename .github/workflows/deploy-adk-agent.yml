@@ -37,6 +37,12 @@ jobs:
       - name: Install ADK
         run: pip install google-adk
 
+      - name: Build and smoke-test Docker image
+        run: |
+          docker build -t tesfa-agent:ci .
+          docker run --rm tesfa-agent:ci python -c "import torch; print('CI: torch', torch.__version__)"
+          docker run --rm -e GOOGLE_API_KEY='dummy' tesfa-agent:ci python -c "import importlib; importlib.import_module('tesfa_agent'); print('CI: import OK')"
+
       - name: Deploy to Cloud Run using ADK (app_name must match Python package)
         run: |
           adk deploy cloud_run \
