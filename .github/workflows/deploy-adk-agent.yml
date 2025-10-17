@@ -3,8 +3,7 @@ name: Deploy ADK Agent to Cloud Run
 on:
   push:
     branches:
-      - feature/tesfa-agentss
-
+      - main
 jobs:
   deploy:
     name: Deploy ADK Agent
