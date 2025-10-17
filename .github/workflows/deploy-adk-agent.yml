@@ -34,34 +34,45 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install ADK
-        run: pip install google-adk
+      - name: Install ADK (and CLI tools)
+        run: |
+          pip install google-adk
 
       - name: Build and smoke-test Docker image
         run: |
+          # Build image locally on the runner and run quick tests
           docker build -t tesfa-agent:ci .
           docker run --rm tesfa-agent:ci python -c "import torch; print('CI: torch', torch.__version__)"
           docker run --rm -e GOOGLE_API_KEY='dummy' tesfa-agent:ci python -c "import importlib; importlib.import_module('tesfa_agent'); print('CI: import OK')"
 
-      - name: Deploy to Cloud Run using ADK (app_name must match Python package)
+      - name: Configure Docker for GCR
         run: |
-          adk deploy cloud_run \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --service_name=tesfa-agent \
-            --app_name=tesfa_agent \
-            --region=europe-west1 \
-            ./tesfa_agent
+          gcloud auth configure-docker --quiet
 
-      - name: Set runtime environment variables on Cloud Run (secure)
+      - name: Tag & push image to GCR
         run: |
-          # Use gcloud to set environment variables for the deployed service from GitHub secrets.
-          # This ensures the running container sees these as real environment variables.
-          gcloud run services update tesfa-agent \
+          IMAGE=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tesfa-agent:${{ github.sha }}
+          docker tag tesfa-agent:ci $IMAGE
+          docker push $IMAGE
+        env:
+          CLOUDSDK_CORE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run using pushed image
+        run: |
+          IMAGE=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tesfa-agent:${{ github.sha }}
+          gcloud run deploy tesfa-agent \
+            --image="$IMAGE" \
             --project=${{ secrets.GCP_PROJECT_ID }} \
             --region=europe-west1 \
-            --update-env-vars=GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}",SUPABASE_HOST="${{ secrets.SUPABASE_HOST }}",SUPABASE_DB="${{ secrets.SUPABASE_DB }}",SUPABASE_USER="${{ secrets.SUPABASE_USER }}",SUPABASE_PASSWORD="${{ secrets.SUPABASE_PASSWORD }}",SUPABASE_PORT="${{ secrets.SUPABASE_PORT }}"
+            --platform=managed \
+            --memory=4Gi \
+            --concurrency=1 \
+            --allow-unauthenticated \
+            --set-env-vars=GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}",SUPABASE_HOST="${{ secrets.SUPABASE_HOST }}",SUPABASE_DB="${{ secrets.SUPABASE_DB }}",SUPABASE_USER="${{ secrets.SUPABASE_USER }}",SUPABASE_PASSWORD="${{ secrets.SUPABASE_PASSWORD }}",SUPABASE_PORT="${{ secrets.SUPABASE_PORT }}"
+        env:
+          CLOUDSDK_CORE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Ensure unauthenticated access is allowed
+      - name: Ensure unauthenticated access is allowed (redundant-safe)
         run: |
           gcloud run services add-iam-policy-binding tesfa-agent \
             --project=${{ secrets.GCP_PROJECT_ID }} \
