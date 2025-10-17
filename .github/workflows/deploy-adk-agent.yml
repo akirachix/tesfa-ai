@@ -70,6 +70,7 @@ jobs:
             --set-env-vars=GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}",SUPABASE_HOST="${{ secrets.SUPABASE_HOST }}",SUPABASE_DB="${{ secrets.SUPABASE_DB }}",SUPABASE_USER="${{ secrets.SUPABASE_USER }}",SUPABASE_PASSWORD="${{ secrets.SUPABASE_PASSWORD }}",SUPABASE_PORT="${{ secrets.SUPABASE_PORT }}"
         env:
           CLOUDSDK_CORE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          
 
       - name: Ensure unauthenticated access is allowed (redundant-safe)
         run: |
