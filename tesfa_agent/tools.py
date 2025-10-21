@@ -128,7 +128,7 @@ Answer in 2-3 sentences.
             pad_token_id=tokenizer.eos_token_id
         )
         bio_gpt_answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print(f":stethoscope: BioGPT Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
+        print(f" BioGPT Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
         gemini_prompt = f"""
 You are a data formatter. Convert the following medical answer into JSON with keys: "risk_level", "diseases", "reason", "recommendations".
 Medical Answer:
