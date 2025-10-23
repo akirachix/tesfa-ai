@@ -4,11 +4,13 @@ import json
 import torch
 import psycopg2
 import time
+import random
 from typing import List, Dict, Optional
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from duckduckgo_search import DDGS
-import google.generativeai as genai
+from groq import Groq
+
 
 
 _conn = None
@@ -32,9 +34,9 @@ def get_supabase_client():
         _cur = _conn.cursor()
         print("[INFO] Connected to Supabase Postgres")
     if _embedding_model is None:
-
         _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
     return _cur, _embedding_model
+
 def get_bio_gpt():
     global _bio_gpt_model, _bio_gpt_tokenizer
     if _bio_gpt_model is None:
@@ -47,6 +49,7 @@ def get_bio_gpt():
         else:
             print("BioGPT loaded on CPU.")
     return _bio_gpt_model, _bio_gpt_tokenizer
+
 def retrieve_context(query: str) -> List[Dict]:
     """
     Hybrid retriever: queries Supabase pgvector first,
@@ -101,20 +104,61 @@ def retrieve_context(query: str) -> List[Dict]:
     print(f"[INFO] Retrieved {len(contexts)} contexts "
           f"({supabase_results_count} from Supabase, {len(contexts)-supabase_results_count} from web)")
     return contexts[:top_k]
+
+def call_llama_for_formatting(prompt: str, max_retries=3) -> str:
+    """
+    Calls Llama-3.1-8b via Groq with exponential backoff retry.
+    Uses generic exception handling for maximum compatibility.
+    """
+    from groq import Groq  
+
+    for attempt in range(max_retries + 1):
+        try:
+            client = Groq(api_key=os.environ["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"])
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=500,
+                timeout=30
+            )
+            return response.choices[0].message.content.strip()
+
+        except Exception as e:
+           
+            error_str = str(e).lower()
+            is_retryable = (
+                "503" in error_str or
+                "service unavailable" in error_str or
+                "429" in error_str or
+                "rate limit" in error_str or
+                "overloaded" in error_str or
+                "timeout" in error_str
+            )
+
+            if is_retryable and attempt < max_retries:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"[WARN] Groq retryable error (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying in {wait_time:.2f}s...")
+                time.sleep(wait_time)
+            else:
+             
+                raise e
+
 def predict_health_risk(context: str, question: str) -> Dict:
     """
-    Uses BioGPT for medical knowledge + Gemini for JSON formatting.
-    Handles missing context gracefully.
+    Uses BioGPT for medical reasoning + Llama-3.1 (Groq) for JSON formatting.
+    Handles missing context and API failures gracefully.
     """
     try:
+       
         model, tokenizer = get_bio_gpt()
         prompt = f"""
-You are a medical expert. Answer the question using the context below.
-If the context is incomplete, make reasonable inferences based on general medical knowledge of war zones.
-Do NOT say "no information found" — provide the best possible answer.
+You are a medical expert in humanitarian crises. Answer the question using the context below.
+If context is limited, infer based on typical war-zone conditions (displacement, destroyed clinics, malnutrition).
+Do NOT say "no data" — provide best possible expert judgment.
 Question: {question}
 Context (first 800 chars): {context[:800]}
-Answer in 2-3 sentences.
+Answer in 2-3 clear, factual sentences.
 """
         inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
         if torch.cuda.is_available():
@@ -128,59 +172,72 @@ Answer in 2-3 sentences.
             pad_token_id=tokenizer.eos_token_id
         )
         bio_gpt_answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print(f" BioGPT Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
-        gemini_prompt = f"""
-You are a data formatter. Convert the following medical answer into JSON with keys: "risk_level", "diseases", "reason", "recommendations".
+        print(f"[BioGPT] Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
+
+        llama_prompt = f"""
+You are a humanitarian data formatter. Convert the following medical expert answer into a JSON object with these keys:
+- "risk_level": one of "Low", "Medium", "High", or "Critical"
+- "diseases": list of disease or health condition names (e.g., ["Cholera", "PTSD", "Untreated cleft lip"])
+- "reason": one-sentence summary of why this is a risk in conflict settings
+- "recommendations": list of 2-3 actionable, NGO-friendly steps
+
 Medical Answer:
 {bio_gpt_answer}
+
 Rules:
-- risk_level: "Low", "Medium", "High", or "Critical" — based on severity
-- diseases: list of disease names mentioned or implied
-- reason: 1-sentence summary of cause
-- recommendations: 2-3 actionable steps for NGOs
-- If diseases are not listed, infer from context
-- NEVER return empty lists — make reasonable assumptions
+- NEVER return empty lists. If diseases aren't named, infer plausible ones.
+- Use war-zone logic: lack of care = high risk, even for congenital conditions.
+- Output ONLY valid JSON. No markdown, no extra text.
 """
-        
-        genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
-        gemini_response = gemini_model.generate_content(gemini_prompt)
-        gemini_text = gemini_response.text.strip()
-        print(f"Gemini Formatted Output:\n{gemini_text}\n{'='*50}")
-        json_match = re.search(r'\{.*\}', gemini_text, re.DOTALL)
+        formatted_output = call_llama_for_formatting(llama_prompt)
+        print(f"[Llama-3.1] Formatted Output:\n{formatted_output}\n{'='*50}")
+
+
+        json_match = re.search(r'\{.*\}', formatted_output, re.DOTALL)
         if not json_match:
-            raise ValueError("Gemini did not return JSON")
+            raise ValueError("Llama did not return JSON")
+
         json_str = json_match.group(0)
         json_str = json_str.replace("'", '"')
-        json_str = re.sub(r',\s*([\}\]])', r'\1', json_str)
+        json_str = re.sub(r',\s*([\}\]])', r'\1', json_str) 
         parsed = json.loads(json_str)
+
         output = {
             "risk_level": "Unknown",
             "diseases": ["General morbidity"],
             "reason": "Post-conflict health risks",
             "recommendations": ["Conduct health assessment", "Strengthen surveillance"]
         }
+
         key_mapping = {
             "risk_level": ["risk_level"],
-            "diseases": ["diseases"],
-            "reason": ["reason"],
-            "recommendations": ["recommendations"]
+            "diseases": ["diseases", "disease", "conditions"],
+            "reason": ["reason", "explanation"],
+            "recommendations": ["recommendations", "actions", "steps"]
         }
+
         for out_key, possible_keys in key_mapping.items():
             for p_key in possible_keys:
                 if p_key in parsed:
                     output[out_key] = parsed[p_key]
                     break
+
         if not isinstance(output["diseases"], list):
             output["diseases"] = [str(output["diseases"])]
         if not isinstance(output["recommendations"], list):
             output["recommendations"] = [str(output["recommendations"])]
+
         return output
+
     except Exception as e:
-        print(f"Final Error: {e}")
+        print(f"[ERROR] Final failure in predict_health_risk: {e}")
         return {
             "risk_level": "High",
-            "diseases": ["Unknown risks"],
-            "reason": "Data retrieval failed — assume worst-case scenario",
-            "recommendations": ["Deploy emergency medical teams", "Initiate rapid assessment"]
+            "diseases": ["Service or data failure"],
+            "reason": "Temporary system overload — using conservative conflict-zone assumptions",
+            "recommendations": [
+                "Assume high risk for infectious diseases and unmet surgical needs",
+                "Deploy rapid health assessment team",
+                "Prioritize WASH and maternal care"
+            ]
         }
