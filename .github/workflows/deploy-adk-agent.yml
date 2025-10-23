@@ -3,8 +3,8 @@ name: Deploy ADK Agent to Cloud Run
 on:
   push:
     branches:
-      - main
       - feature/tesfa-agent
+
 jobs:
   deploy:
     name: Deploy ADK Agent
@@ -38,12 +38,12 @@ jobs:
         run: |
           pip install google-adk
 
-      # - name: Build and smoke-test Docker image
-      #   run: |
-      #     # Build image locally on the runner and run quick tests
-      #     docker build -t tesfa-agent:ci .
-      #     docker run --rm tesfa-agent:ci python -c "import torch; print('CI: torch', torch.__version__)"
-      #     docker run --rm -e GOOGLE_API_KEY='dummy' tesfa-agent:ci python -c "import importlib; importlib.import_module('tesfa_agent'); print('CI: import OK')"
+      - name: Build and smoke-test Docker image
+        run: |
+          # Build image locally on the runner and run quick tests
+          docker build -t tesfa-agent:ci .
+          docker run --rm tesfa-agent:ci python -c "import torch; print('CI: torch', torch.__version__)"
+          docker run --rm -e GOOGLE_API_KEY='dummy' tesfa-agent:ci python -c "import importlib; importlib.import_module('tesfa_agent'); print('CI: import OK')"
 
       - name: Configure Docker for GCR
         run: |
