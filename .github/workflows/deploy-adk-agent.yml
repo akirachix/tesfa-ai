@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feature/tesfa-agent
-
 jobs:
   deploy:
     name: Deploy ADK Agent
