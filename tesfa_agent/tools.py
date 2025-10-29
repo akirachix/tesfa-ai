@@ -10,6 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from duckduckgo_search import DDGS
 import google.generativeai as genai
 
+
 _conn = None
 _cur = None
 _embedding_model = None
@@ -127,7 +128,7 @@ Answer in 2-3 sentences.
             pad_token_id=tokenizer.eos_token_id
         )
         bio_gpt_answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print(f":stethoscope: BioGPT Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
+        print(f" BioGPT Raw Answer:\n{bio_gpt_answer}\n{'='*50}")
         gemini_prompt = f"""
 You are a data formatter. Convert the following medical answer into JSON with keys: "risk_level", "diseases", "reason", "recommendations".
 Medical Answer:
@@ -183,8 +184,3 @@ Rules:
             "reason": "Data retrieval failed — assume worst-case scenario",
             "recommendations": ["Deploy emergency medical teams", "Initiate rapid assessment"]
         }
-
-
-
-
-

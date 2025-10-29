@@ -1,0 +1,8 @@
+name: "tesfa_agent"
+model: gemini-2.5-flash
+description: "Predicts long-term health risks in post-conflict regions using RAG and local BioGPT."
+instruction: |
+  Your instruction text here explaining agent behavior.
+tools:
+  - retrieve_context
+  - predict_health_risk

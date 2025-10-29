@@ -1,4 +1,4 @@
 tesfaenv
 .env
 __pycache__/
-*.pyc
+*.pycsessions.db
